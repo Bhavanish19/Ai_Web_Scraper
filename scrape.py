@@ -1,43 +1,56 @@
-import streamlit as st
-from scrape import (
-    scrape_website,
-    extract_body_content,
-    clean_body_content,
-    split_dom_content,
-)
-from parse import parse_with_ollama
+from selenium.webdriver import Remote, ChromeOptions
+from selenium.webdriver.chromium.remote_connection import ChromiumRemoteConnection
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import os
 
-# Streamlit UI
-st.title("AI Web Scraper")
-url = st.text_input("Enter Website URL")
+AUTH = 'brd-customer-hl_91941e2c-zone-ai_scraper:0cm85uqoxefj'
+SBR_WEBDRIVER = f'https://brd-customer-hl_91941e2c-zone-ai_scraper:0cm85uqoxefj@zproxy.lum-superproxy.io:9515'
 
-# Step 1: Scrape the Website
-if st.button("Scrape Website"):
-    if url:
-        st.write("Scraping the website...")
-
-        # Scrape the website
-        dom_content = scrape_website(url)
-        body_content = extract_body_content(dom_content)
-        cleaned_content = clean_body_content(body_content)
-
-        # Store the DOM content in Streamlit session state
-        st.session_state.dom_content = cleaned_content
-
-        # Display the DOM content in an expandable text box
-        with st.expander("View DOM Content"):
-            st.text_area("DOM Content", cleaned_content, height=300)
+def scrape_website(website):
+    print("Connecting to Scraping Browser...")
+    sbr_connection = ChromiumRemoteConnection(SBR_WEBDRIVER, "goog", "chrome")
+    with Remote(sbr_connection, options=ChromeOptions()) as driver:
+        driver.get(website)
+        print("Waiting captcha to solve...")
+        solve_res = driver.execute(
+            "executeCdpCommand",
+            {
+                "cmd": "Captcha.waitForSolve",
+                "params": {"detectTimeout": 10000},
+            },
+        )
+        print("Captcha solve status:", solve_res["value"]["status"])
+        print("Navigated! Scraping page content...")
+        html = driver.page_source
+        return html
 
 
-# Step 2: Ask Questions About the DOM Content
-if "dom_content" in st.session_state:
-    parse_description = st.text_area("Describe what you want to parse")
+def extract_body_content(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+    body_content = soup.body
+    if body_content:
+        return str(body_content)
+    return ""
 
-    if st.button("Parse Content"):
-        if parse_description:
-            st.write("Parsing the content...")
 
-            # Parse the content with Ollama
-            dom_chunks = split_dom_content(st.session_state.dom_content)
-            parsed_result = parse_with_ollama(dom_chunks, parse_description)
-            st.write(parsed_result)
+def clean_body_content(body_content):
+    soup = BeautifulSoup(body_content, "html.parser")
+
+    for script_or_style in soup(["script", "style"]):
+        script_or_style.extract()
+
+    # Get text or further process the content
+    cleaned_content = soup.get_text(separator="\n")
+    cleaned_content = "\n".join(
+        line.strip() for line in cleaned_content.splitlines() if line.strip()
+    )
+
+    return cleaned_content
+
+
+def split_dom_content(dom_content, max_length=6000):
+    return [
+        dom_content[i : i + max_length] for i in range(0, len(dom_content), max_length)
+    ]
+    
