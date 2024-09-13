@@ -32,3 +32,15 @@ Python-dotenv: To manage environment variables.
 HTML5lib: A compliant library for parsing and serializing HTML documents.
 
 Chromedriver: To interface with Google Chrome.
+
+
+**RESULT**
+
+![Screenshot 2024-09-12 at 9 08 52 PM (2)](https://github.com/user-attachments/assets/05d00342-463d-4332-beda-907212fa7a94)
+
+![Screenshot 2024-09-12 at 9 09 16 PM](https://github.com/user-attachments/assets/22670eb1-3554-4fad-9cff-23ea55aa2359)
+
+![Screenshot 2024-09-12 at 9 09 45 PM](https://github.com/user-attachments/assets/49b2a38a-892e-42e3-b3f5-1cb810448088)
+
+
+
